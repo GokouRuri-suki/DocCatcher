@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     ai_api_base_url: str = "https://api.openai.com/v1"
     ai_api_key: str = ""
     ai_model: str = "gpt-4o-mini"
+    # 单次 AI 请求超时（秒）。没有超时的话，上游挂死会让进度永远停在动画态。
+    ai_timeout_seconds: int = 120
 
     # 数据库配置（默认落在 backend/study_assistant.db，与启动目录无关）
     database_url: str = f"sqlite:///{BASE_DIR / 'study_assistant.db'}"

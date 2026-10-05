@@ -81,6 +81,14 @@ const api = {
         return res.json();
     },
 
+    // 单个知识点详情（含完整正文 content）
+    // 树/图谱接口为控制体积不返回 content，详情面板需要它时按 id 单独拉
+    async getKnowledgePoint(pointId) {
+        const res = await fetch(`${API_BASE}/documents/knowledge/${pointId}`);
+        if (!res.ok) throw new Error('获取知识点详情失败');
+        return res.json();
+    },
+
     async getKnowledgeProgress(documentId) {
         const res = await fetch(`${API_BASE}/documents/${documentId}/knowledge/progress`);
         if (!res.ok) throw new Error('获取进度失败');

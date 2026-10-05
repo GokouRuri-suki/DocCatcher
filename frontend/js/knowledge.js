@@ -100,15 +100,51 @@ document.getElementById('knowledgeDocSelect')?.addEventListener('change', (e) =>
     }
 });
 
-function showKnowledgeDetail(point) {
+// 详情请求序号：快速连续点多个节点时，只有最后一次点击的结果能落地
+let detailRequestSeq = 0;
+
+/**
+ * 打开知识点详情面板
+ *
+ * 注意：/knowledge/tree 与 /knowledge/graph 为控制响应体积都**不返回 content**，
+ * 所以这里必须按 id 再拉一次 /documents/knowledge/{id} 才能显示正文。
+ */
+async function showKnowledgeDetail(point) {
     const panel = document.getElementById('knowledgeDetail');
-    document.getElementById('detailTitle').textContent = point.title;
-    document.getElementById('detailDescription').textContent = point.description || '';
-    document.getElementById('detailContent').textContent = point.content || '';
-    document.getElementById('detailPages').textContent = point.page_numbers ? `📖 相关页码: ${point.page_numbers}` : '';
+    const titleEl = document.getElementById('detailTitle');
+    const descEl = document.getElementById('detailDescription');
+    const contentEl = document.getElementById('detailContent');
+    const pagesEl = document.getElementById('detailPages');
+
+    if (!point || point.id === undefined) return;
+
+    const seq = ++detailRequestSeq;
+
+    // 先用已有信息立即渲染，避免面板空白等待
+    titleEl.textContent = point.title || '';
+    descEl.textContent = point.description || '';
+    pagesEl.textContent = point.page_numbers ? `📖 相关页码: ${point.page_numbers}` : '';
+    contentEl.textContent = point.content || '正在加载正文…';
     panel.style.display = 'block';
+
+    try {
+        const full = await api.getKnowledgePoint(point.id);
+
+        // 期间用户又点了别的节点，或已关闭面板 -> 丢弃这次结果
+        if (seq !== detailRequestSeq || panel.style.display === 'none') return;
+
+        titleEl.textContent = full.title || point.title || '';
+        descEl.textContent = full.description || '';
+        pagesEl.textContent = full.page_numbers ? `📖 相关页码: ${full.page_numbers}` : '';
+        contentEl.textContent = full.content || '（该知识点没有更详细的正文）';
+    } catch (error) {
+        if (seq !== detailRequestSeq) return;
+        console.error('加载知识点详情失败:', error);
+        contentEl.textContent = '（正文加载失败，请重试）';
+    }
 }
 
 function closeDetail() {
+    detailRequestSeq++;   // 让在途请求作废
     document.getElementById('knowledgeDetail').style.display = 'none';
 }

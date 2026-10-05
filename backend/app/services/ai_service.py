@@ -28,13 +28,26 @@ class AIService:
         self.last_finish_reason = None
     
     @property
+    def timeout(self) -> float:
+        """单次请求超时（秒），从配置读取"""
+        try:
+            return float(settings.ai_timeout_seconds)
+        except Exception:
+            return 120.0
+
+    def _build_client(self) -> OpenAI:
+        return OpenAI(
+            api_key=settings.ai_api_key,
+            base_url=settings.ai_api_base_url,
+            timeout=self.timeout,
+            max_retries=1,
+        )
+
+    @property
     def client(self):
-        """获取 OpenAI 客户端，如果未初始化或配置已更改，则重新初始化"""
+        """获取 OpenAI 客户端，如果未初始化则创建"""
         if self._client is None:
-            self._client = OpenAI(
-                api_key=settings.ai_api_key,
-                base_url=settings.ai_api_base_url
-            )
+            self._client = self._build_client()
         return self._client
     
     @client.setter
@@ -55,20 +68,22 @@ class AIService:
         self._model = value
     
     def refresh_client(self):
-        """强制刷新客户端配置"""
-        self._client = OpenAI(
-            api_key=settings.ai_api_key,
-            base_url=settings.ai_api_base_url
-        )
+        """强制刷新客户端配置（含超时）"""
+        self._client = self._build_client()
         self._model = settings.ai_model
     
     def chat(self, messages: List[Dict], temperature: float = 0.7, max_tokens: int = 4000) -> str:
-        """发送聊天请求"""
+        """发送聊天请求
+
+        带超时：上游挂死时抛异常，由调用方把任务标记为 failed，
+        而不是让进度条永远停在不确定态。
+        """
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            timeout=self.timeout,
         )
         choice = response.choices[0]
         # 记录结束原因，便于识别"被 max_tokens 截断"的情况

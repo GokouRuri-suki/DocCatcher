@@ -1,6 +1,5 @@
 """文档管理 API"""
 import uuid
-import shutil
 from pathlib import Path
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks
 from sqlalchemy import or_
@@ -97,6 +96,39 @@ def process_document(document_id: int, file_path: str):
         db.close()
 
 
+def save_upload_with_limit(upload_file: UploadFile, dest: Path, max_bytes: int) -> int:
+    """分块落盘，并在写入过程中强制大小上限
+
+    不能只信任 Content-Length（可能缺失或被伪造），所以按块累计校验；
+    一旦超限就立即中断、删除半成品文件，并返回 413。
+
+    返回实际写入的字节数。
+    """
+    chunk_size = 1024 * 1024  # 1 MB
+    written = 0
+    try:
+        with open(dest, "wb") as out:
+            while True:
+                chunk = upload_file.file.read(chunk_size)
+                if not chunk:
+                    break
+                written += len(chunk)
+                if written > max_bytes:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"文件超过大小上限 {max_bytes // (1024 * 1024)} MB"
+                    )
+                out.write(chunk)
+    except Exception:
+        # 任何失败（含超限）都不要留下残缺文件
+        try:
+            dest.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
+    return written
+
+
 @router.post("/upload", response_model=DocumentResponse)
 async def upload_document(
     background_tasks: BackgroundTasks,
@@ -113,20 +145,17 @@ async def upload_document(
     filename = f"{uuid.uuid4()}{ext}"
     upload_dir = settings.resolved_upload_dir
     upload_dir.mkdir(parents=True, exist_ok=True)
-    file_path = str(upload_dir / filename)
+    file_path = upload_dir / filename
     
-    # 保存文件
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    
-    # 获取文件大小
-    file_size = Path(file_path).stat().st_size
+    # 保存文件（强制 MAX_UPLOAD_SIZE_MB 上限，超限返回 413 且不留残缺文件）
+    max_bytes = max(1, settings.max_upload_size_mb) * 1024 * 1024
+    file_size = save_upload_with_limit(file, file_path, max_bytes)
     
     # 创建文档记录
     doc = Document(
         filename=filename,
         original_name=file.filename,
-        file_path=file_path,
+        file_path=str(file_path),
         status="uploading",
         file_size=file_size
     )
@@ -135,7 +164,7 @@ async def upload_document(
     db.refresh(doc)
     
     # 后台处理文档
-    background_tasks.add_task(process_document, doc.id, file_path)
+    background_tasks.add_task(process_document, doc.id, str(file_path))
     
     return doc
 

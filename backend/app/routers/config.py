@@ -167,10 +167,15 @@ async def test_ai_connection():
     
     try:
         from openai import OpenAI
-        
+        from app.config import settings
+
+        # 连接测试也要有超时，否则地址填错时前端会一直转圈
+        test_timeout = float(getattr(settings, "ai_timeout_seconds", 120) or 120)
         client = OpenAI(
             api_key=config.get("api_key"),
-            base_url=config.get("api_base_url", "https://api.openai.com/v1")
+            base_url=config.get("api_base_url", "https://api.openai.com/v1"),
+            timeout=min(test_timeout, 30.0),
+            max_retries=0,
         )
         
         # 发送测试请求
@@ -179,7 +184,8 @@ async def test_ai_connection():
             messages=[
                 {"role": "user", "content": "Hi"}
             ],
-            max_tokens=10
+            max_tokens=10,
+            timeout=min(test_timeout, 30.0),
         )
         
         return {
