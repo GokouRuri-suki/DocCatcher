@@ -52,45 +52,63 @@ ai-study-assistant/
 │       ├── settings.js      # AI 设置弹窗
 │       └── visualization.js # 可视化模块
 ├── docs/STATUS.md           # 现状梳理：依赖 / 仓库卫生 / 隐患清单
-├── start.sh                 # 启动脚本
+├── scripts/launcher.py      # 跨平台启动器（setup/start/stop/status/doctor）
+├── start.sh                 # Linux/macOS 入口（薄垫片）
+├── start.bat                # Windows 入口（薄垫片）
 └── README.md
 ```
 
 > 建表方式说明：项目使用 SQLAlchemy 的 `Base.metadata.create_all()` 建表，**没有接入 Alembic 迁移**（架构早期设想的 Alembic 未落地，依赖也已移除）。改表结构时请注意这一点。
 
-## 快速开始
+## 快速开始（一键）
 
-### 1. 安装依赖
+只需要**两个入口脚本**，Windows 与 Linux 各一个。首次运行会自动建虚拟环境、装依赖，
+之后运行就直接启动。真正的逻辑放在 `scripts/launcher.py`（两个平台共用同一份实现，
+避免用两种语言重复写）。
+
+| 系统 | 启动方式 |
+|------|----------|
+| **Windows** | 双击 **`start.bat`** |
+| **Linux / macOS** | 执行 **`./start.sh`** |
+
+启动脚本会在服务**真正就绪后**才返回（轮询 `/health`），并自动打开浏览器。
+首次使用请在页面左下角 **⚙️ AI 设置** 里填入 API 地址与 Key。
+
+### 常用命令
+
+```bash
+./start.sh                 # 启动（默认 8000，自动打开浏览器）
+./start.sh 8001            # 指定端口
+./start.sh stop            # 停止
+./start.sh status          # 查看状态
+./start.sh doctor          # 环境诊断（出问题的第一步）
+./start.sh setup           # 只做环境准备（网络慢可加 --mirror）
+./start.sh --help          # 全部参数
+```
+
+Windows 把 `./start.sh` 换成 `start.bat` 即可，参数完全一致（如 `start.bat stop`）。
+
+### Windows 注意事项
+
+- **必须装 Python 3.9+**，安装时勾选 *Add Python to PATH*。
+  下载：https://www.python.org/downloads/
+- 默认绑 `0.0.0.0`，首次启动 Windows 会弹**防火墙授权**对话框。
+  只在本机用可避免弹窗：`start.bat --host 127.0.0.1`
+- 只在本机使用、不需要局域网访问时，建议就用 `--host 127.0.0.1`（本服务无认证）。
+
+### 手动启动（进阶）
+
+不想用脚本时：
 
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-### 2. 启动后端
-
-推荐用启动脚本（在项目根目录）：
-
-```bash
-./start.sh          # 启动，默认 8000 端口
-./start.sh 8001     # 指定端口启动
-./start.sh stop     # 停止服务
-```
-
-脚本会自动检查虚拟环境和端口占用，并轮询 `/health` 确认真正就绪后才返回。
-日志输出到 `backend/uvicorn.log`。
-
-也可以手动启动：
-
-```bash
-cd backend
-source venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 3. 配置 AI API
+### 配置 AI API
 
 打开浏览器访问 `http://localhost:8000`，首次访问会自动弹出 AI 设置窗口。
 

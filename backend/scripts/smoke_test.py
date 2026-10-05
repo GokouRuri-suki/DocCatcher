@@ -1,11 +1,22 @@
 #!/usr/bin/env python3
 """冒烟测试 - 验证后端核心功能（PDF 解析 / 分块 / 建表）
 
-用法（在 backend/ 目录下）：
-    ./venv/bin/python scripts/smoke_test.py
+用法（在任意目录均可）：
+    backend/venv/bin/python backend/scripts/smoke_test.py     # Linux/macOS
+    backend\\venv\\Scripts\\python.exe backend\\scripts\\smoke_test.py   # Windows
+
+不使用任何非 ASCII 符号（例如对勾、叉号、烧瓶等 emoji），否则在 Windows 的
+GBK 控制台下会抛 UnicodeEncodeError。仅用 [OK] / [FAIL] / [WARN] 标记。
 """
 import sys
 import os
+
+# Windows 控制台尽量切到 UTF-8，避免中文输出乱码；失败不影响运行
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
 
 # 让脚本能从 backend/ 导入 app 包（脚本位于 backend/scripts/）
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -50,8 +61,8 @@ def create_test_pdf():
     page3.insert_text((72, 250), "Python 支持面向对象编程范式。")
     page3.insert_text((72, 280), "类是对象的蓝图，对象是类的实例。")
     
-    # 保存
-    output_path = Path("test_output.pdf")
+    # 保存到系统临时目录，不污染当前工作目录
+    output_path = Path(tempfile.gettempdir()) / "ai_study_assistant_smoke_test.pdf"
     doc.save(str(output_path))
     doc.close()
     
@@ -66,13 +77,13 @@ def test_pdf_parsing():
     
     # 创建测试 PDF
     pdf_path = create_test_pdf()
-    print(f"✓ 创建测试 PDF: {pdf_path}")
+    print(f"[OK] 创建测试 PDF: {pdf_path}")
     
     # 解析 PDF
     result = parse_pdf(pdf_path)
     
-    print(f"✓ 总页数: {result['total_pages']}")
-    print(f"✓ 识别到 {len(result['sections'])} 个章节:")
+    print(f"[OK] 总页数: {result['total_pages']}")
+    print(f"[OK] 识别到 {len(result['sections'])} 个章节:")
     
     for i, section in enumerate(result['sections']):
         print(f"  {i+1}. {section['title']} (第{section['start_page']}-{section['end_page']}页)")
@@ -80,14 +91,14 @@ def test_pdf_parsing():
     
     # 测试分块
     chunks = chunk_sections(result['sections'])
-    print(f"\n✓ 分块结果: {len(chunks)} 个文本块")
+    print(f"\n[OK] 分块结果: {len(chunks)} 个文本块")
     
     for i, chunk in enumerate(chunks[:3]):  # 只显示前3个
         print(f"  块 {i+1}: {chunk['section_title']} - {chunk['char_count']} 字符")
     
     # 清理
     Path(pdf_path).unlink()
-    print(f"\n✓ 测试通过！")
+    print(f"\n[OK] 测试通过！")
     
     return True
 
@@ -106,7 +117,7 @@ def test_database():
     inspector = inspect(engine)
     tables = inspector.get_table_names()
     
-    print(f"✓ 数据库表: {', '.join(tables)}")
+    print(f"[OK] 数据库表: {', '.join(tables)}")
     
     expected_tables = ['documents', 'knowledge_points', 'knowledge_relations', 
                        'study_plans', 'study_plan_items', 'quizzes', 
@@ -114,31 +125,31 @@ def test_database():
     
     for table in expected_tables:
         if table in tables:
-            print(f"  ✓ {table}")
+            print(f"  [OK]   {table}")
         else:
-            print(f"  ✗ {table} (缺失)")
+            print(f"  [FAIL] {table} (缺失)")
     
     return True
 
 
 def main():
     """主测试函数"""
-    print("\n🧪 AI 学习助手 - 系统测试\n")
+    print("\n=== AI 学习助手 - 环境自检 ===\n")
     
     try:
         test_database()
         test_pdf_parsing()
         
         print("\n" + "=" * 60)
-        print("✅ 所有测试通过！")
+        print("[OK] 所有测试通过！")
         print("=" * 60)
-        print("\n下一步:")
-        print("1. 编辑 backend/.env 文件，填入你的 AI API Key")
-        print("2. 访问 http://localhost:8000 使用系统")
-        print("3. 上传 PDF 文件开始学习")
+        print("\n下一步（由启动脚本自动完成，也可手动执行）:")
+        print("1. 启动服务:  ./start.sh      (Windows: 双击 start.bat)")
+        print("2. 打开浏览器 http://localhost:8000")
+        print("3. 左下角 [AI 设置] 填入你的 API 地址与 Key 后即可使用")
         
     except Exception as e:
-        print(f"\n❌ 测试失败: {e}")
+        print(f"\n[FAIL] 测试失败: {e}")
         import traceback
         traceback.print_exc()
         return 1

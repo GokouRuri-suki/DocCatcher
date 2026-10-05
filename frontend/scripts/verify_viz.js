@@ -63,7 +63,8 @@ function contrast(a, b) {
 
     let pass = 0, fail = 0;
     const check = (name, ok, detail) => {
-        console.log(`  ${ok ? '✓' : '✗'} ${name}${detail ? '  — ' + detail : ''}`);
+        // 只用 ASCII 标记：Windows 控制台使用旧代码页时不会乱码
+        console.log(`  ${ok ? '[OK]  ' : '[FAIL]'} ${name}${detail ? '  - ' + detail : ''}`);
         ok ? pass++ : fail++;
     };
 

@@ -49,6 +49,9 @@ class Settings(BaseSettings):
 
         这样即使 .env 里写的是 sqlite:///./study_assistant.db，
         从任何工作目录启动都会连到同一个库文件。
+
+        注意：必须用 as_posix() 拼 URL。Windows 下 Path 会给出反斜杠
+        （C:\\...\\study_assistant.db），正斜杠才能保证各版本一致解析。
         """
         prefix = "sqlite:///"
         if not self.database_url.startswith(prefix):
@@ -58,8 +61,8 @@ class Settings(BaseSettings):
         raw = self.database_url[len(prefix):]
         p = Path(raw)
         if p.is_absolute():
-            return self.database_url
-        return f"{prefix}{BASE_DIR / p}"
+            return f"{prefix}{p.as_posix()}"
+        return f"{prefix}{(BASE_DIR / p).as_posix()}"
 
 
 settings = Settings()
