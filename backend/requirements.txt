@@ -1,0 +1,27 @@
+# AI 学习助手 - 后端依赖
+#
+# 说明：
+# - 数据库用 SQLAlchemy 的 create_all() 建表，因此不依赖 alembic
+# - AI 配置的 API Key 用 cryptography 的 Fernet 加密存储，必须保留
+# - 上游依赖一律用 >= 约束（暂无锁文件，升级前请先跑 smoke_test）
+
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+sqlalchemy>=2.0.25
+
+# 表单上传（FastAPI UploadFile 依赖）
+python-multipart>=0.0.6
+
+# 配置读取 .env
+python-dotenv>=1.0.0
+pydantic-settings>=2.1.0
+pydantic>=2.5.0
+
+# AI 调用（OpenAI 兼容接口）
+openai>=1.12.0
+
+# PDF 解析
+PyMuPDF>=1.23.0
+
+# API Key 加密存储（app/routers/config.py 使用 Fernet）
+cryptography>=42.0.0

@@ -1,0 +1,30 @@
+# ===== 依赖与构建产物 =====
+backend/venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# ===== 敏感配置（切勿入库）=====
+# 注意：.env.example 是模板，必须保留，因此这里只忽略 .env
+.env
+backend/ai_config.json
+backend/.encryption_key
+
+# ===== 运行时产物 =====
+*.log
+*.pid
+*.db
+*.sqlite
+*.sqlite3
+
+# ===== 用户上传的教材与上传目录 =====
+uploads/
+*.pdf
+
+# ===== 编辑器 / 系统 =====
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

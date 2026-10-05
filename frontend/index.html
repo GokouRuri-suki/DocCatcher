@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 学习助手</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- 可视化依赖：本地文件，离线可用（原先走 CDN，断网即失效） -->
+    <script src="/static/assets/vendor/d3.v7.min.js"></script>
+    <script src="/static/assets/vendor/vis-network.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>📚 AI 学习助手</h1>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-tab="upload">
+                    <span class="icon">📄</span>
+                    <span>文档管理</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="knowledge">
+                    <span class="icon">🧠</span>
+                    <span>知识体系</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="plan">
+                    <span class="icon">📅</span>
+                    <span>学习规划</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="quiz">
+                    <span class="icon">✍️</span>
+                    <span>测试练习</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="qa">
+                    <span class="icon">💬</span>
+                    <span>智能问答</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="settings-btn" id="settingsBtn" title="AI 设置">
+                    <span class="icon">⚙️</span>
+                    <span>AI 设置</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 文档管理 -->
+            <section id="tab-upload" class="tab-content active">
+                <div class="page-header">
+                    <h2>文档管理</h2>
+                    <p class="subtitle">上传 PDF 文档，开始智能学习之旅</p>
+                </div>
+                
+                <!-- 上传区域 -->
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📤</div>
+                    <p class="upload-text">拖拽 PDF 文件到此处，或点击选择文件</p>
+                    <input type="file" id="fileInput" accept=".pdf" hidden>
+                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                        选择文件
+                    </button>
+                </div>
+                
+                <!-- 上传进度 -->
+                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <p class="progress-text">正在上传...</p>
+                </div>
+
+                <!-- 解析进度（真实按页计数） -->
+                <div id="parseProgressHost"></div>
+
+                <!-- 文档列表 -->
+                <div class="document-list">
+                    <h3>我的文档</h3>
+                    <div id="documentList" class="doc-grid">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 知识体系 -->
+            <section id="tab-knowledge" class="tab-content">
+                <div class="page-header">
+                    <h2>知识体系</h2>
+                    <div class="header-actions">
+                        <select id="knowledgeDocSelect" class="select-input">
+                            <option value="">选择文档</option>
+                        </select>
+                        <label class="inline-field">
+                            分析文本块
+                            <input type="number" id="knowledgeMaxChunks" class="number-input"
+                                   value="20" min="5" max="200" step="5" title="参与 AI 分析的文本块数量">
+                        </label>
+                        <button class="btn btn-primary" id="generateKnowledgeBtn">生成知识点</button>
+                    </div>
+                </div>
+
+                <!-- 知识点生成进度 -->
+                <div id="knowledgeProgressHost"></div>
+
+                <!-- 视图切换 -->
+                <div class="view-toggle">
+                    <button class="toggle-btn active" data-view="mindmap">思维导图</button>
+                    <button class="toggle-btn" data-view="graph">知识图谱</button>
+                </div>
+
+                <!-- 思维导图 -->
+                <div id="mindmapView" class="visualization-container">
+                    <svg id="mindmapSvg" width="100%" height="600"></svg>
+                </div>
+
+                <!-- 知识图谱 -->
+                <div id="graphView" class="visualization-container" style="display: none;">
+                    <div id="knowledgeGraph" style="width: 100%; height: 600px; border: 1px solid #e0e0e0; border-radius: 8px;"></div>
+                    <!-- 图例：否则颜色没有解释，用户不知道色块和线代表什么 -->
+                    <div class="graph-legend">
+                        <div class="legend-group">
+                            <span class="legend-title">节点层级</span>
+                            <span class="legend-item"><i class="legend-dot" style="background:#1e40af"></i>章</span>
+                            <span class="legend-item"><i class="legend-dot" style="background:#4f46e5"></i>节</span>
+                            <span class="legend-item"><i class="legend-dot" style="background:#7c3aed"></i>知识点</span>
+                        </div>
+                        <div class="legend-group">
+                            <span class="legend-title">关系类型</span>
+                            <span class="legend-item"><i class="legend-line" style="background:#ef4444"></i>前置</span>
+                            <span class="legend-item"><i class="legend-line legend-dashed" style="background:#94a3b8"></i>相关</span>
+                            <span class="legend-item"><i class="legend-line" style="background:#10b981"></i>包含</span>
+                        </div>
+                        <div class="legend-group legend-hint">
+                            滚轮缩放 · 拖拽平移 · 点击节点看详情
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 知识点详情 -->
+                <div id="knowledgeDetail" class="detail-panel" style="display: none;">
+                    <div class="detail-header">
+                        <h3 id="detailTitle"></h3>
+                        <button class="close-btn" onclick="closeDetail()">×</button>
+                    </div>
+                    <div class="detail-content">
+                        <p id="detailDescription"></p>
+                        <div id="detailContent"></div>
+                        <p class="page-ref" id="detailPages"></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 学习规划 -->
+            <section id="tab-plan" class="tab-content">
+                <div class="page-header">
+                    <h2>学习规划</h2>
+                    <div class="header-actions">
+                        <select id="planDocSelect" class="select-input">
+                            <option value="">选择文档</option>
+                        </select>
+                        <input type="number" id="planDays" value="30" min="7" max="90" class="number-input" placeholder="天数">
+                        <button class="btn btn-primary" id="generatePlanBtn">生成规划</button>
+                    </div>
+                </div>
+
+                <!-- 学习规划进度 -->
+                <div id="planProgressHost"></div>
+
+                <!-- 学习规划列表 -->
+                <div id="planList" class="plan-container">
+                    <p class="empty-state">请先选择文档并生成学习规划</p>
+                </div>
+            </section>
+
+            <!-- 测试练习 -->
+            <section id="tab-quiz" class="tab-content">
+                <div class="page-header">
+                    <h2>测试练习</h2>
+                    <div class="header-actions">
+                        <select id="quizDocSelect" class="select-input">
+                            <option value="">选择文档</option>
+                        </select>
+                        <input type="number" id="quizCount" value="10" min="5" max="30" class="number-input" placeholder="题数">
+                        <button class="btn btn-primary" id="generateQuizBtn">生成测验</button>
+                    </div>
+                </div>
+
+                <!-- 测验生成进度 -->
+                <div id="quizProgressHost"></div>
+
+                <!-- 测验列表 -->
+                <div id="quizList" class="quiz-list">
+                    <p class="empty-state">请先选择文档并生成测验</p>
+                </div>
+
+                <!-- 答题界面 -->
+                <div id="quizArea" class="quiz-area" style="display: none;">
+                    <div class="quiz-header">
+                        <h3 id="quizTitle"></h3>
+                        <div class="quiz-progress">
+                            <span id="currentQuestion">1</span> / <span id="totalQuestions">10</span>
+                        </div>
+                    </div>
+                    <div class="quiz-body">
+                        <div class="question-card">
+                            <p class="question-type" id="questionType"></p>
+                            <p class="question-text" id="questionText"></p>
+                            <div class="options" id="questionOptions"></div>
+                            <input type="text" class="fill-input" id="fillInput" placeholder="请输入答案" style="display: none;">
+                        </div>
+                    </div>
+                    <div class="quiz-footer">
+                        <button class="btn btn-secondary" id="prevQuestionBtn">上一题</button>
+                        <button class="btn btn-primary" id="nextQuestionBtn">下一题</button>
+                        <button class="btn btn-success" id="submitQuizBtn" style="display: none;">提交答案</button>
+                    </div>
+                </div>
+
+                <!-- 测验结果 -->
+                <div id="quizResult" class="quiz-result" style="display: none;">
+                    <div class="result-header">
+                        <h3>测验结果</h3>
+                        <div class="score-display">
+                            <span class="score" id="resultScore">0</span>
+                            <span class="score-label">分</span>
+                        </div>
+                    </div>
+                    <div class="result-stats">
+                        <div class="stat-item">
+                            <span class="stat-value" id="correctCount">0</span>
+                            <span class="stat-label">正确</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="totalCount">0</span>
+                            <span class="stat-label">总题数</span>
+                        </div>
+                    </div>
+                    <div class="result-details" id="resultDetails"></div>
+                    <button class="btn btn-primary" onclick="backToQuizList()">返回测验列表</button>
+                </div>
+            </section>
+
+            <!-- 智能问答 -->
+            <section id="tab-qa" class="tab-content">
+                <div class="page-header">
+                    <h2>智能问答</h2>
+                    <div class="header-actions">
+                        <select id="qaDocSelect" class="select-input">
+                            <option value="">选择文档</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="qa-container">
+                    <!-- 对话历史 -->
+                    <div class="qa-history" id="qaHistory">
+                        <div class="empty-state">
+                            <p>💡 选择文档后，输入你的问题</p>
+                            <p>系统将根据 PDF 内容为你解答</p>
+                        </div>
+                    </div>
+
+                    <!-- 输入区域 -->
+                    <div class="qa-input-area">
+                        <textarea id="qaInput" placeholder="输入你的问题..." rows="3"></textarea>
+                        <button class="btn btn-primary" id="askQuestionBtn">发送</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 加载遮罩 -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">处理中...</p>
+    </div>
+
+    <!-- 提示消息 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- AI 设置弹窗 -->
+    <div class="modal-overlay" id="settingsModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>⚙️ AI 设置</h3>
+                <button class="close-btn" onclick="closeSettingsModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="apiBaseUrl">API 地址</label>
+                    <input type="text" id="apiBaseUrl" class="form-input" 
+                           placeholder="https://api.openai.com/v1">
+                    <p class="form-hint">支持 OpenAI 兼容接口，如 OpenAI、DeepSeek、智谱等</p>
+                </div>
+                <div class="form-group">
+                    <label for="apiKey">API Key</label>
+                    <input type="password" id="apiKey" class="form-input" 
+                           placeholder="输入你的 API Key">
+                    <p class="form-hint">你的 API Key 仅保存在本地</p>
+                </div>
+                <div class="form-group">
+                    <label for="modelSelect">模型</label>
+                    <select id="modelSelect" class="form-input">
+                        <option value="gpt-4o-mini">GPT-4o Mini (OpenAI)</option>
+                        <option value="gpt-4o">GPT-4o (OpenAI)</option>
+                        <option value="deepseek-chat">DeepSeek Chat</option>
+                        <option value="deepseek-reasoner">DeepSeek Reasoner</option>
+                        <option value="glm-4-flash">GLM-4-Flash (智谱)</option>
+                        <option value="custom">自定义模型...</option>
+                    </select>
+                </div>
+                <div class="form-group" id="customModelGroup" style="display: none;">
+                    <label for="customModel">自定义模型名称</label>
+                    <input type="text" id="customModel" class="form-input" 
+                           placeholder="输入模型名称">
+                </div>
+                <div class="preset-list">
+                    <p class="preset-title">常用配置快速填入：</p>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" onclick="fillPreset('openai')">OpenAI</button>
+                        <button class="preset-btn" onclick="fillPreset('deepseek')">DeepSeek</button>
+                        <button class="preset-btn" onclick="fillPreset('zhipu')">智谱 AI</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="testConnectionBtn">测试连接</button>
+                <button class="btn btn-secondary" onclick="closeSettingsModal()">取消</button>
+                <button class="btn btn-primary" id="saveSettingsBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/progress.js"></script>
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/knowledge.js"></script>
+    <script src="/static/js/study-plan.js"></script>
+    <script src="/static/js/quiz.js"></script>
+    <script src="/static/js/qa.js"></script>
+    <script src="/static/js/visualization.js"></script>
+    <script src="/static/js/settings.js"></script>
+</body>
+</html>
