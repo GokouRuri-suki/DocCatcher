@@ -326,8 +326,8 @@ class AIService:
         {{
             "question_type": "single_choice",  // single_choice/multiple_choice/true_false/fill_blank
             "question_text": "题目内容",
-            "options": {{"A": "选项A", "B": "选项B", "C": "选项C", "D": "选项D"}},  // 选择题必填
-            "correct_answer": "A",  // 选择题为选项字母，判断题为 true/false，填空题为答案字符串
+            "options": {{"A": "选项A", "B": "选项B", "C": "选项C", "D": "选项D"}},  // 仅选择题提供
+            "correct_answer": "A",  // 格式见下方「正确格式」表
             "explanation": "解析",
             "difficulty": 3,  // 1-5
             "knowledge_point_index": 0  // 关联知识点索引
@@ -335,10 +335,20 @@ class AIService:
     ]
 }}
 
-要求：
+【正确格式】correct_answer 必须严格按题型给出，否则判分会出错：
+- single_choice   ：单个选项字母字符串，如 "B"
+- multiple_choice ：选项字母的【数组】，如 ["A", "C"]。禁止写成 "AC" 或 "A,C"
+- true_false      ：只给 "true" 或 "false" 字符串，并且【不要】提供 options
+- fill_blank      ：答案的【数组】。题干有几个空，数组就几个元素，顺序与空一一对应。
+                    单空也写成单元素数组，如 ["delete"]；
+                    双空如「用于定义类型别名的关键字是 ______ 或 ______。」
+                    -> ["typedef", "using"]
+
+【其他要求】
 1. 题型分布合理（单选、多选、判断、填空）
 2. 难度梯度分布
-3. 覆盖主要知识点"""
+3. 覆盖主要知识点
+4. 填空题的空位统一用连续下划线表示（至少两个下划线，如 ______）"""
 
         messages = [
             {"role": "system", "content": "你是一个出题专家，擅长根据知识点生成高质量的测验题目。请只返回 JSON 格式。"},

@@ -877,6 +877,46 @@ body {
     border-color: var(--primary-color);
 }
 
+/* ===== 填空题：一组空位（题干有 N 个空就渲染 N 个输入框）===== */
+.fill-blanks {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.fill-blank-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.fill-blank-label {
+    flex: 0 0 auto;
+    min-width: 56px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    white-space: nowrap;
+}
+
+.fill-blank-row .fill-input {
+    flex: 1;
+    min-width: 0;
+}
+
+/* 窄屏时序号换到输入框上方，避免输入框被挤得过短 */
+@media (max-width: 560px) {
+    .fill-blank-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+
+    .fill-blank-label {
+        min-width: 0;
+    }
+}
+
 .quiz-footer {
     display: flex;
     justify-content: space-between;
