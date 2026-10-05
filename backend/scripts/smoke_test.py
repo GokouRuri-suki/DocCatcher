@@ -104,7 +104,12 @@ def test_pdf_parsing():
 
 
 def test_database():
-    """测试数据库"""
+    """测试数据库建表
+
+    注意：建表动作原本挂在 app/main.py 的模块级，后来随 lifespan 迁移挪进了
+    生命周期钩子 —— 也就是说"光是 import app"已经不会建表了。因此这里必须
+    自己显式建表，否则自检会在应用启动前跑，看到的是空库。
+    """
     print("\n" + "=" * 60)
     print("测试数据库")
     print("=" * 60)
@@ -112,22 +117,29 @@ def test_database():
     from app.database import engine, Base
     from app.models import Document, KnowledgePoint, StudyPlan, Quiz
     
-    # 检查表是否创建
+    # 显式建表（幂等），与应用启动时做的事一致
+    Base.metadata.create_all(bind=engine)
+    
     from sqlalchemy import inspect
     inspector = inspect(engine)
-    tables = inspector.get_table_names()
-    
-    print(f"[OK] 数据库表: {', '.join(tables)}")
+    tables = set(inspector.get_table_names())
     
     expected_tables = ['documents', 'knowledge_points', 'knowledge_relations', 
                        'study_plans', 'study_plan_items', 'quizzes', 
                        'quiz_questions', 'quiz_attempts', 'quiz_answers', 'text_chunks']
     
+    missing = [t for t in expected_tables if t not in tables]
+    
+    print(f"[OK] 数据库表共 {len(tables)} 张: {', '.join(sorted(tables))}")
     for table in expected_tables:
         if table in tables:
             print(f"  [OK]   {table}")
         else:
             print(f"  [FAIL] {table} (缺失)")
+    
+    if missing:
+        print(f"\n[FAIL] 缺少 {len(missing)} 张表: {', '.join(missing)}")
+        return False
     
     return True
 
@@ -135,25 +147,34 @@ def test_database():
 def main():
     """主测试函数"""
     print("\n=== AI 学习助手 - 环境自检 ===\n")
-    
+
+    failures = []
+
     try:
-        test_database()
-        test_pdf_parsing()
-        
-        print("\n" + "=" * 60)
-        print("[OK] 所有测试通过！")
-        print("=" * 60)
-        print("\n下一步（由启动脚本自动完成，也可手动执行）:")
-        print("1. 启动服务:  ./start.sh      (Windows: 双击 start.bat)")
-        print("2. 打开浏览器 http://localhost:8000")
-        print("3. 左下角 [AI 设置] 填入你的 API 地址与 Key 后即可使用")
-        
+        # 每项都检查返回值：任一失败都必须让退出码非 0，
+        # 否则启动脚本会把"自检通过"这个结论建立在假象上
+        if not test_database():
+            failures.append("数据库建表")
+        if not test_pdf_parsing():
+            failures.append("PDF 解析")
     except Exception as e:
-        print(f"\n[FAIL] 测试失败: {e}")
+        print(f"\n[FAIL] 自检异常: {e}")
         import traceback
         traceback.print_exc()
+        failures.append(f"异常: {e}")
+
+    print("\n" + "=" * 60)
+    if failures:
+        print(f"[FAIL] 自检未通过（{len(failures)} 项）: {', '.join(failures)}")
+        print("=" * 60)
         return 1
-    
+
+    print("[OK] 所有检查通过")
+    print("=" * 60)
+    print("\n下一步（由启动脚本自动完成，也可手动执行）:")
+    print("1. 启动服务:  ./start.sh      (Windows: 双击 start.bat)")
+    print("2. 打开浏览器 http://localhost:8000")
+    print("3. 左下角 [AI 设置] 填入你的 API 地址与 Key 后即可使用")
     return 0
 
 
