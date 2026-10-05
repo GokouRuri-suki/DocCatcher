@@ -71,7 +71,7 @@ function renderStudyPlan(plan) {
 
     container.innerHTML = `
         <h3 style="margin-bottom: 16px;">${escapeHtml(plan.title)}</h3>
-        <p style="color: var(--text-secondary); margin-bottom: 20px;">${escapeHtml(plan.description || '')}</p>
+        <div class="md-body" style="color: var(--text-secondary); margin-bottom: 20px;">${MD.render(plan.description || '')}</div>
         ${plan.items.map(item => `
             <div class="plan-day">
                 <div class="plan-day-header ${item.completed ? 'completed' : ''}" onclick="togglePlanDay(this)">
@@ -79,7 +79,7 @@ function renderStudyPlan(plan) {
                     <span>${item.completed ? '✅ 已完成' : '⬜ 未完成'}</span>
                 </div>
                 <div class="plan-day-content show">
-                    <p class="plan-tasks">${escapeHtml(item.tasks || '暂无任务描述')}</p>
+                    <div class="md-body plan-tasks">${MD.render(item.tasks || '暂无任务描述')}</div>
                     <label class="plan-checkbox">
                         <input type="checkbox" ${item.completed ? 'checked' : ''} 
                                onchange="togglePlanItem(${item.id}, this.checked)">

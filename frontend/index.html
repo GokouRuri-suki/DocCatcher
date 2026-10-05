@@ -8,6 +8,9 @@
     <!-- 可视化依赖：本地文件，离线可用（原先走 CDN，断网即失效） -->
     <script src="/static/assets/vendor/d3.v7.min.js"></script>
     <script src="/static/assets/vendor/vis-network.min.js"></script>
+    <!-- Markdown 渲染与消毒：purify 缺失时 markdown.js 会自动退化为纯文本 -->
+    <script src="/static/assets/vendor/marked.min.js"></script>
+    <script src="/static/assets/vendor/purify.min.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -146,8 +149,9 @@
                         <button class="close-btn" onclick="closeDetail()">×</button>
                     </div>
                     <div class="detail-content">
-                        <p id="detailDescription"></p>
-                        <div id="detailContent"></div>
+                        <!-- 用 div 而非 p：MD.render 会输出 <p>，<p> 里不能再嵌 <p> -->
+                        <div id="detailDescription" class="md-body"></div>
+                        <div id="detailContent" class="md-body"></div>
                         <p class="page-ref" id="detailPages"></p>
                     </div>
                 </div>
@@ -337,6 +341,7 @@
 
     <!-- JavaScript -->
     <script src="/static/js/api.js"></script>
+    <script src="/static/js/markdown.js"></script>
     <script src="/static/js/progress.js"></script>
     <script src="/static/js/app.js"></script>
     <script src="/static/js/knowledge.js"></script>

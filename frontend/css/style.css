@@ -1114,6 +1114,100 @@ body {
     margin-bottom: 4px;
 }
 
+/* ===== Markdown 渲染区排版（.md-body）=====
+   全局有 `* { margin: 0; padding: 0 }` 重置，不补下面这些规则的话，
+   标题/段落/列表会全部挤成一坨，比纯文本还难读。 */
+.md-body {
+    overflow-wrap: anywhere;   /* 超长标识符或 URL 不撑破气泡 */
+    word-break: break-word;
+}
+
+.md-body > *:first-child { margin-top: 0; }
+.md-body > *:last-child { margin-bottom: 0; }
+
+.md-body p { margin: 0 0 10px; line-height: 1.7; }
+
+.md-body h1, .md-body h2, .md-body h3,
+.md-body h4, .md-body h5, .md-body h6 {
+    margin: 16px 0 8px;
+    line-height: 1.35;
+    font-weight: 600;
+}
+.md-body h1 { font-size: 1.25rem; }
+.md-body h2 { font-size: 1.15rem; }
+.md-body h3 { font-size: 1.05rem; }
+.md-body h4, .md-body h5, .md-body h6 { font-size: 1rem; }
+
+.md-body ul, .md-body ol { margin: 0 0 10px; padding-left: 1.5em; }
+.md-body ul { list-style: disc; }
+.md-body ol { list-style: decimal; }
+.md-body li { margin: 4px 0; line-height: 1.7; }
+.md-body li > ul, .md-body li > ol { margin: 4px 0 0; }
+
+/* 行内代码 */
+.md-body code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.88em;
+    background: rgba(15, 23, 42, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* 代码块：不换行，横向滚动，避免撑破气泡 */
+.md-body pre {
+    margin: 0 0 12px;
+    padding: 12px 14px;
+    background: #0f172a;
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    line-height: 1.55;
+}
+
+.md-body pre code {
+    background: none;          /* 去掉行内代码底色，避免两层背景 */
+    padding: 0;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    white-space: pre;
+}
+
+.md-body blockquote {
+    margin: 0 0 12px;
+    padding: 4px 0 4px 12px;
+    border-left: 3px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.md-body a { color: var(--primary-color); text-decoration: underline; }
+.md-body a:hover { text-decoration: none; }
+
+.md-body hr {
+    margin: 16px 0;
+    border: none;
+    border-top: 1px solid var(--border-color);
+}
+
+/* 表格：窄屏可横向滚动 */
+.md-body table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    margin: 0 0 12px;
+    font-size: 0.9rem;
+}
+.md-body th, .md-body td {
+    border: 1px solid var(--border-color);
+    padding: 6px 10px;
+    text-align: left;
+}
+.md-body th { background: var(--bg-color); font-weight: 600; }
+
+/* 题库/规划里 Markdown 区域的间距微调 */
+.result-question-text { margin-bottom: 8px; }
+.result-explanation .md-body { margin-top: 6px; }
+
 .qa-input-area {
     display: flex;
     gap: 12px;

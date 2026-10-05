@@ -81,10 +81,22 @@ function addQAMessage(role, content, isLoading = false, sources = null) {
         `;
     }
     
+    // AI 的回答按 Markdown 渲染（marked + DOMPurify，见 markdown.js）；
+    // 用户自己发的消息保持纯文本转义 —— 渲染用户输入只有坏处没有好处
+    const isAssistant = role === 'assistant';
+    let bodyHtml;
+    if (isLoading) {
+        bodyHtml = '<span class="loading-dots">...</span>';
+    } else if (isAssistant) {
+        bodyHtml = MD.render(content);
+    } else {
+        bodyHtml = escapeHtml(content).replace(/\n/g, '<br>');
+    }
+
     messageDiv.innerHTML = `
         <div class="qa-avatar">${avatar}</div>
-        <div class="qa-bubble">
-            ${isLoading ? '<span class="loading-dots">...</span>' : escapeHtml(content).replace(/\n/g, '<br>')}
+        <div class="qa-bubble ${isAssistant ? 'md-body' : ''}">
+            ${bodyHtml}
             ${sourcesHtml}
         </div>
     `;

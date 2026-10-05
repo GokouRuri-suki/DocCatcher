@@ -121,10 +121,11 @@ async function showKnowledgeDetail(point) {
     const seq = ++detailRequestSeq;
 
     // 先用已有信息立即渲染，避免面板空白等待
+    // 描述与正文都是 AI 生成的 Markdown，走 MD.render（含消毒与降级）
     titleEl.textContent = point.title || '';
-    descEl.textContent = point.description || '';
+    descEl.innerHTML = MD.render(point.description || '');
     pagesEl.textContent = point.page_numbers ? `📖 相关页码: ${point.page_numbers}` : '';
-    contentEl.textContent = point.content || '正在加载正文…';
+    contentEl.innerHTML = MD.render(point.content || '') || '正在加载正文…';
     panel.style.display = 'block';
 
     try {
@@ -134,13 +135,13 @@ async function showKnowledgeDetail(point) {
         if (seq !== detailRequestSeq || panel.style.display === 'none') return;
 
         titleEl.textContent = full.title || point.title || '';
-        descEl.textContent = full.description || '';
+        descEl.innerHTML = MD.render(full.description || '');
         pagesEl.textContent = full.page_numbers ? `📖 相关页码: ${full.page_numbers}` : '';
-        contentEl.textContent = full.content || '（该知识点没有更详细的正文）';
+        contentEl.innerHTML = MD.render(full.content || '') || '（该知识点没有更详细的正文）';
     } catch (error) {
         if (seq !== detailRequestSeq) return;
         console.error('加载知识点详情失败:', error);
-        contentEl.textContent = '（正文加载失败，请重试）';
+        contentEl.innerHTML = MD.render('（正文加载失败，请重试）');
     }
 }
 

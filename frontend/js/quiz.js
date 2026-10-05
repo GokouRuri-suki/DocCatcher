@@ -360,9 +360,9 @@ function renderQuizResult(result) {
                         ${isCorrect ? '✓ 正确' : '✗ 错误'}
                     </span>
                 </div>
-                <p>${escapeHtml(q.question_text)}</p>
+                <div class="md-body result-question-text">${MD.render(q.question_text)}</div>
                 <p class="result-answer">${answerDisplay}</p>
-                ${q.explanation ? `<div class="result-explanation"><strong>解析:</strong> ${escapeHtml(q.explanation)}</div>` : ''}
+                ${q.explanation ? `<div class="result-explanation"><strong>解析:</strong><div class="md-body">${MD.render(q.explanation)}</div></div>` : ''}
             </div>
         `;
     }).join('');
