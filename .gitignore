@@ -23,6 +23,10 @@ backend/.encryption_key
 uploads/
 *.pdf
 
+# ===== 本地工作笔记（只保留在自己机器上，不入库）=====
+# 内容包含项目现状盘点、未修问题清单、以及用例中出现过的教材文件名等本地信息
+docs/STATUS.md
+
 # ===== 编辑器 / 系统 =====
 .vscode/
 .idea/

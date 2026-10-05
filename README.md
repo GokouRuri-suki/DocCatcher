@@ -51,7 +51,6 @@ ai-study-assistant/
 │       ├── qa.js            # 问答模块
 │       ├── settings.js      # AI 设置弹窗
 │       └── visualization.js # 可视化模块
-├── docs/STATUS.md           # 现状梳理：依赖 / 仓库卫生 / 隐患清单
 ├── scripts/launcher.py      # 跨平台启动器（setup/start/stop/status/doctor）
 ├── start.sh                 # Linux/macOS 入口（薄垫片）
 ├── start.bat                # Windows 入口（薄垫片）
@@ -134,8 +133,6 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ### 4. 开始使用
 
 API 文档: `http://localhost:8000/docs`
-
-> 更多现状信息（依赖清单、仓库卫生、已知隐患与安全说明）见 [docs/STATUS.md](docs/STATUS.md)。
 
 ## 使用流程
 

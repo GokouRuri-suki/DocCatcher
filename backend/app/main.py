@@ -86,8 +86,11 @@ app = FastAPI(
 
 # CORS 配置
 # 警告：allow_origins=["*"] + allow_credentials=True 表示任意网页都能调用本服务。
-# 本服务无认证，若绑定 0.0.0.0，同网段任何人都能消耗 AI 额度，
-# 并能通过 POST /api/config 改写 base_url 把内容转发到第三方。详见 docs/STATUS.md
+# 本服务无认证，若绑定 0.0.0.0，同网段任何人都能：
+#   1) 消耗你的 AI 额度；
+#   2) 通过 POST /api/config 改写 base_url，把你的教材内容与提问转发到第三方；
+#   3) 直接读取/删除你的文档。
+# 只在本机使用的话，建议用 127.0.0.1 启动（./start.sh --host 127.0.0.1）。
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
