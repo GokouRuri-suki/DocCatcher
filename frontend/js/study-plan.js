@@ -76,13 +76,13 @@ function renderStudyPlan(plan) {
             <div class="plan-day">
                 <div class="plan-day-header ${item.completed ? 'completed' : ''}" onclick="togglePlanDay(this)">
                     <span class="plan-day-title">第 ${item.day_number} 天: ${escapeHtml(item.title)}</span>
-                    <span>${item.completed ? '✅ 已完成' : '⬜ 未完成'}</span>
+                    <span class="plan-day-status">${item.completed ? '✅ 已完成' : '⬜ 未完成'}</span>
                 </div>
                 <div class="plan-day-content show">
                     <div class="md-body plan-tasks">${MD.render(item.tasks || '暂无任务描述')}</div>
                     <label class="plan-checkbox">
                         <input type="checkbox" ${item.completed ? 'checked' : ''} 
-                               onchange="togglePlanItem(${item.id}, this.checked)">
+                               onchange="togglePlanItem(this, ${item.id}, this.checked)">
                         <span>标记为已完成</span>
                     </label>
                 </div>
@@ -96,16 +96,31 @@ function togglePlanDay(header) {
     content.classList.toggle('show');
 }
 
-async function togglePlanItem(itemId, completed) {
+/**
+ * 勾选 / 取消「已完成」
+ *
+ * 注意：这里**必须**把触发元素当参数传进来，不能依赖隐式的全局 event。
+ * 因为后面有 await，等响应回来时事件早已派发结束：
+ *   · Firefox 根本不支持 window.event -> ReferenceError
+ *   · Chrome/Edge 在派发结束后 window.event 会变回 null -> TypeError
+ * 两者都会在保存成功之后再抛错，表现为「先提示已完成，紧接着又报更新失败」。
+ */
+async function togglePlanItem(inputEl, itemId, completed) {
+    const dayEl = inputEl && inputEl.closest ? inputEl.closest('.plan-day') : null;
+    const header = dayEl ? dayEl.querySelector('.plan-day-header') : null;
+    const statusEl = header ? header.querySelector('.plan-day-status') : null;
+
     try {
         await api.updatePlanItem(itemId, completed);
+
+        // 先更新界面，再提示，避免出现「成功提示后面紧跟失败提示」的错乱
+        if (header) header.classList.toggle('completed', completed);
+        if (statusEl) statusEl.textContent = completed ? '✅ 已完成' : '⬜ 未完成';
+
         showToast(completed ? '已标记为完成' : '已取消完成标记', 'success');
-        
-        // 更新 UI
-        const header = event.target.closest('.plan-day').querySelector('.plan-day-header');
-        header.classList.toggle('completed', completed);
-        header.querySelector('span:last-child').textContent = completed ? '✅ 已完成' : '⬜ 未完成';
     } catch (error) {
+        // 失败要把勾选状态回滚，否则界面显示与后端记录不一致
+        if (inputEl) inputEl.checked = !completed;
         showToast('更新失败: ' + error.message, 'error');
     }
 }
